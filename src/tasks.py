@@ -19,8 +19,9 @@ app = get_celery_app()
 BACKEND_HOSTNAME = os.environ.get('BACKEND_HOSTNAME', 'localhost')
 BACKEND_PORT = os.environ.get('BACKEND_PORT', '8000')
 
-@app.task
+@app.task(name="wk-irs.tasks.send_result")
 def send_result(**kwargs):
+    print()
     print("Sending result to backend")
     print(kwargs)
     try:
