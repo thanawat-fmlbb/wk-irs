@@ -3,6 +3,9 @@ import requests
 from celery import Celery
 from dotenv import load_dotenv
 
+from opentelemetry import trace
+from opentelemetry.trace.propagation.tracecontext import TraceContextTextMapPropagator
+
 
 load_dotenv()
 REDIS_HOSTNAME = os.environ.get('REDIS_HOSTNAME', 'localhost')
@@ -25,7 +28,13 @@ def send_result(**kwargs):
     print("Sending result to backend")
     print(kwargs)
     try:
-        requests.post(f"http://{BACKEND_HOSTNAME}:{BACKEND_PORT}/internal/submit_result", json=kwargs)
+        tracer = trace.get_tracer(__name__)
+        with tracer.start_as_current_span("send_to_create_order"):
+            carrier = {}
+            TraceContextTextMapPropagator().inject(carrier)
+            header = {"traceparent": carrier["traceparent"]}
+            
+            requests.post(f"http://{BACKEND_HOSTNAME}:{BACKEND_PORT}/internal/submit_result", json=kwargs, headers=header)
     except Exception as e:
         print(e)
         return False
